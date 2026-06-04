@@ -1,0 +1,48 @@
+运行--ros-args --log-level DEBUG
+查看debug输出
+
+jazzy识别python节点有问题，只能直接节点名运行
+
+
+sudo poweroff
+
+
+device_data_service --ros-args     -p post_url:="http://192.168.2.100:8000/api/device"     -p enable_http_post:=true
+
+device_data_service --ros-args \
+    -p post_url:="http://localhost:8000/api/device" \
+    -p enable_http_post:=true
+
+cs: dict_items(
+    [(1003, 
+        [
+            {'设备id': 1003, 
+            '设备mac': '2c:cf:67:81:0c:d9', 
+            '设备状态': 0, 
+            '时间戳': 1780314198704,
+            'mac_address_a': 'aa:bb:cc:dd:ee:ff', 
+            'mac_address_b': '11:22:33:44:55:66', 
+            '记录时间': '2026-06-01T22:10:04.232259'}
+        ]
+    ),
+     (1002, 
+        [
+            {'设备id': 1002, 
+            '设备mac': '2c:cf:67:81:0c:d9', 
+            '设备状态': 0, 
+            '时间戳': 1780314198704, 
+            'mac_address_a': 'aa:bb:cc:dd:ee:ff',
+             'mac_address_b': '11:22:33:44:55:66',
+              '记录时间': '2026-06-01T22:10:10.273750'}
+        ]
+    ), (1004, [{'设备id': 1004, '设备mac': '2c:cf:67:81:0c:d9', '设备状态': 0, '时间戳': 1780314198704, 'mac_address_a': 'aa:bb:cc:dd:ee:ff', 'mac_address_b': '11:22:33:44:55:66', '记录时间': '2026-06-01T22:10:18.434639'}]), (1001, [
+    {'设备id': 1001, 
+    '设备mac': '2c:cf:67:81:0c:d9', 
+    '设备状态': 0, 
+    '时间戳': 1780314198704, 
+    'mac_address_a': 'aa:bb:cc:dd:ee:ff',
+     'mac_address_b': '11:22:33:44:55:66', 
+    '记录时间': '2026-06-01T22:10:26.500106'}])
+
+]
+)
