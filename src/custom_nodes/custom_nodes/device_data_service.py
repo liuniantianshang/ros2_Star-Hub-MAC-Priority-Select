@@ -19,6 +19,7 @@ import os
 import uuid
 import requests
 from threading import Thread
+import random
 
 class DeviceDataService(Node):
     """
@@ -47,7 +48,7 @@ class DeviceDataService(Node):
         self.post_timeout = self.get_parameter('post_timeout').value
 
 
-        self.device_id = 1001  # 设备ID
+        self.device_id = random.randint(1000, 9999)  # 设备ID
         self.status = 0  # 设备状态（0、1、2、3）
         self.local_mac = self._get_local_mac()
         self.mac_address_a = '00:00:00:00:00:00'  #MAC A
@@ -217,7 +218,19 @@ class DeviceDataService(Node):
             self.get_logger().info(f'HTTP POST disabled')
 
         
-        
+    def reset(self):
+        """
+        重置设备数据服务的状态和记录。
+        此函数可用于处理设备ID冲突或其他需要重置服务状态的情况。
+        """
+        self.status = -1  # 设置为-1表示重置状态
+        self.publish_device_status()  # 发布重置状态以通知其他设备
+
+        self.get_logger().warn('正在重置设备数据服务状态...')
+        self.device_id = random.randint(1000, 9999)  # 生成新的随机设备ID
+        self.status = 1  # 重置状态
+        self.publish_device_status()  # 发布重置后的状态以通知其他设备
+        self.get_logger().info(f'设备数据服务已重置，新的设备ID: {self.device_id}')
 
     def _record_device_data(self, msg: DeviceStatus):
         """
@@ -228,6 +241,23 @@ class DeviceDataService(Node):
         """
         device_id = msg.device_id
         
+        if device_id == self.device_id and msg.local_mac != self.local_mac and self.status != 3:
+            self.get_logger().warn(
+                f'设备ID冲突: 收到的消息device_id={msg.device_id} '
+                f'与本机device_id={self.device_id}相同，但MAC地址不同!'
+            )
+            self.reset() # 重置ID以避免冲突
+            return  # 不记录冲突消息
+        
+        if msg.status == -1 and msg.device_id in self.device_records and self.status != 3:
+            self.get_logger().warn(
+                f'设备 {msg.device_id} 请求重置，正在清除相关记录...'
+            )
+            del self.device_records[msg.device_id]  # 删除相关记录
+            if msg.device_id in self.device_death:
+                self.device_death.remove(msg.device_id)  # 从死亡列表中移除设备ID
+            return  # 不记录重置请求
+
         # 若设备记录列表不存在，则初始化该列表
         if device_id not in self.device_records:
             self.device_records[device_id] = []
@@ -248,7 +278,7 @@ class DeviceDataService(Node):
             self.device_death.remove(device_id)  # 从死亡列表中移除设备ID
         
 
-        if msg.status == 0:
+        if msg.status == 0 or msg.status == 1:
             self.get_logger().info('发现新设备,给予信息供应')
             self.publish_device_status() # 发布当前状态通告给新入机器(如果发现)
         
@@ -312,6 +342,7 @@ class DeviceDataService(Node):
         """
         match status:
             case 0:
+                self.status = 1  # 更新状态为1，表示已完成启动阶段
                 return '启动'
             case 1:
                 #状态设置
