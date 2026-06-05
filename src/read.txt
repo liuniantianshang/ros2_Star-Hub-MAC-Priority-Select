@@ -14,6 +14,36 @@ device_data_service --ros-args \
     -p post_url:="http://localhost:8000/api/device" \
     -p enable_http_post:=true
 
+
+ros2 topic pub /device_status custom_interfaces/msg/DeviceStatus "{device_id: 1003, local_mac: '00:dd:ee:ff:00:11', status: 1, timestamp: 1780314198704, mac_address_a: 'aa:bb:cc:dd:ee:ff', mac_address_b: '11:22:33:44:55:66'}" -1
+
+
+git add .
+git commit -m "第二次更新:解决重上线问题与设备随机ID实现
+                1.新增restart.json文件，记录上次成功上线的ID
+                2.更新(完善)了初始化状态逻辑
+                3.在初级回调函数device_status_callback中增加了ID冲突的解决逻辑(当双方非维护则均进入reset函数进行重置，且其他设备删除
+                相应ID的记录；单方未进入维护状态则非维护方进入reset重置，维护方忽略冲突信息与原ID-"-1"-重置信息，其他设备忽略冲突信息与
+                原ID-"-1"-重置信息)
+                4.新增reset函数，解决ID冲突问题，并发布原ID-"-1"-重置信息、新ID-"-1"-重置记录信息、新ID-"1"-恢复信息；并将新ID重新写入
+                restart.json文件和info重置完成提示
+                5.新增与修复发现新设备的条件 in 305-306
+                6.新增新设备在发现st.3设备信息时，直接获取协商信息并进入st.3状态
+                7.文件保存新增可自选参数data,以自由选择保存的信息。"
+git push
+
+
+git add .
+git commit -m "第三次更新:更新了服务器的修复逻辑，先看剩余设备数量，小于二则进入单服务模式，大于二则先判断副服务器是否挂起挂起则重新选举
+再判断主服务器是否挂起，挂起则将副服务器提升为主服务器，并重新选举副服务器;为了让服务器不停止运行，目前暂时不考虑将剩余1台服务器时状态重置为
+等待协商，现在是保持st3"
+git push
+
+
+
+
+
+
 cs: dict_items(
     [(1003, 
         [
@@ -47,3 +77,65 @@ cs: dict_items(
 
 ]
 )
+
+
+rsp1@rsp1-desktop:~$ device_data_service 
+[INFO] [1780655439.992375128] [device_data_service]: 发布设备状态: 设备id=1001, 状态=0
+[INFO] [1780655439.993036482] [device_data_service]: 设备正在初始化...
+[INFO] [1780655439.993619207] [device_data_service]: HTTP POST已禁用或URL未配置
+[INFO] [1780655439.994151394] [device_data_service]: 设备数据服务已初始化
+[INFO] [1780655439.994688748] [device_data_service]: 订阅device_status主题
+[INFO] [1780655439.995214657] [device_data_service]: 发布到device_status_service主题
+[INFO] [1780655439.995786252] [device_data_service]: 发布设备状态: 设备id=1001, 状态=1
+[INFO] [1780655439.996330310] [device_data_service]: 探测通告已发出，等待设备响应...
+
+
+
+[INFO] [1780655439.997441777] [device_data_service]: 发现新设备  local status=0,给予信息供应
+[INFO] [1780655439.997959964] [device_data_service]: 发布设备状态: 设备id=1001, 状态=1
+[INFO] [1780655439.998822542] [device_data_service]: 设备数据保存到:device_data.json (1 记录)
+[INFO] [1780655439.999281895] [device_data_service]: 记录设备 1001: 状态=0, mac=2c:cf:67:81:0c:d9, 时间戳=1780655439964
+[INFO] [1780655439.999747342] [device_data_service]: 等待设备触发协商...
+
+
+[INFO] [1780655440.001840479] [device_data_service]: 设备数据保存到:device_data.json (2 记录)
+[INFO] [1780655440.002421889] [device_data_service]: 记录设备 1001: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780655439995
+[INFO] [1780655440.002921539] [device_data_service]: 等待设备触发协商...
+
+
+[INFO] [1780655440.004270229] [device_data_service]: 设备数据保存到:device_data.json (3 记录)
+[INFO] [1780655440.004873769] [device_data_service]: 记录设备 1001: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780655439997
+[INFO] [1780655440.005348289] [device_data_service]: 等待设备触发协商...
+^C[INFO] [1780655448.292189184] [device_data_service]: ========================================
+
+
+
+
+rsp1@rsp1-desktop:~/ros2_ws$ device_data_service 
+[INFO] [1780657610.586980186] [device_data_service]: restart文件存在
+[INFO] [1780657610.587778093] [device_data_service]: 从文件加载设备ID: 5446
+[INFO] [1780657610.598054665] [device_data_service]: 发布设备状态: 设备id=5446, 状态=0
+[INFO] [1780657610.598668424] [device_data_service]: 设备正在初始化...
+[INFO] [1780657610.599303701] [device_data_service]: HTTP POST已禁用或URL未配置
+[INFO] [1780657610.599940016] [device_data_service]: 设备数据服务已初始化
+[INFO] [1780657610.600552645] [device_data_service]: 订阅device_status主题
+[INFO] [1780657610.601163775] [device_data_service]: 发布到device_status_service主题
+[INFO] [1780657610.602456274] [device_data_service]: 发现新设备,给予信息供应
+[INFO] [1780657610.602996719] [device_data_service]: 发布设备状态: 设备id=5446, 状态=0
+[INFO] [1780657610.603862515] [device_data_service]: 设备数据保存到:device_data.json (1 记录)
+[INFO] [1780657610.604388181] [device_data_service]: 记录设备 5446: 状态=0, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610597
+[INFO] [1780657610.605196996] [device_data_service]: 发布设备状态: 设备id=5446, 状态=1
+[INFO] [1780657610.605637088] [device_data_service]: 探测通告已发出，等待设备响应...
+
+
+[INFO] [1780657610.606801606] [device_data_service]: 发现新设备,给予信息供应
+[INFO] [1780657610.607351069] [device_data_service]: 发布设备状态: 设备id=5446, 状态=1
+[INFO] [1780657610.608114569] [device_data_service]: 设备数据保存到:device_data.json (2 记录)
+[INFO] [1780657610.608554069] [device_data_service]: 记录设备 5446: 状态=0, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610602
+[INFO] [1780657610.609128180] [device_data_service]: 等待设备触发协商...
+[INFO] [1780657610.610378809] [device_data_service]: 设备数据保存到:device_data.json (3 记录)
+[INFO] [1780657610.610925346] [device_data_service]: 记录设备 5446: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610604
+[INFO] [1780657610.611451624] [device_data_service]: 等待设备触发协商...
+[INFO] [1780657610.612715234] [device_data_service]: 设备数据保存到:device_data.json (4 记录)
+[INFO] [1780657610.613202716] [device_data_service]: 记录设备 5446: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610606
+[INFO] [1780657610.613761456] [device_data_service]: 等待设备触发协商...

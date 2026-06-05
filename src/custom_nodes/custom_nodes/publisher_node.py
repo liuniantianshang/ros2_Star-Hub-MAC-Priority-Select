@@ -39,7 +39,7 @@ class DeviceStatusPublisher(Node):
         
         # 设备配置
         self.device_id = [1002,1003,1004]
-        self.de_mac ={1002:'11:77:88:99:aa:bb',1003:'11:dd:ee:ff:00:11',1004:'11:33:44:55:66:77'}
+        self.de_mac ={1002:'ff:77:88:99:aa:bb',1003:'00:dd:ee:ff:00:11',1004:'00:33:44:55:66:77'}
         self.local_mac = self._get_local_mac()
         self.status_counter = 0
         
