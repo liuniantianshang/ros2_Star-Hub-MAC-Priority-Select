@@ -9,7 +9,7 @@
 
 uint32 device_id
 string local_mac
-uint8 status
+int8 status
 uint64 timestamp
 string mac_address_a
 string mac_address_b

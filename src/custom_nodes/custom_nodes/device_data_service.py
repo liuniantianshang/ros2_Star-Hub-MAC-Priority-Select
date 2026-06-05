@@ -47,8 +47,23 @@ class DeviceDataService(Node):
         self.enable_http_post = self.get_parameter('enable_http_post').value
         self.post_timeout = self.get_parameter('post_timeout').value
 
+        # 数据存储
+        self.device_records = {}  # {device_id: [records]}
+        self.total_records = 0
+        self.data_file = 'device_data.json'
+        self.restart_file = "device_restart.json" # 记录上次信息的文件路径
 
-        self.device_id = random.randint(1000, 9999)  # 设备ID
+        if os.path.exists(self.restart_file):
+            self.get_logger().info("restart文件存在")
+            with open(self.restart_file, 'r') as f:
+                self.device_id = json.load(f)  # 从文件中加载设备ID
+                self.get_logger().info(f'从文件加载设备ID: {self.device_id}')
+        else:
+            self.get_logger().info("restart文件不存在")
+            self.device_id = random.randint(1000, 9999)  # 设备ID
+            self.save_data_to_file(filename='device_restart.json', data=self.device_id) # 初始化时保存id到文件
+
+        # self.device_id = random.randint(1000, 9999)  # 设备ID
         self.status = 0  # 设备状态（0、1、2、3）
         self.local_mac = self._get_local_mac()
         self.mac_address_a = '00:00:00:00:00:00'  #MAC A
@@ -76,10 +91,6 @@ class DeviceDataService(Node):
         self.publish_device_status()
         self.get_logger().info('设备正在初始化...')
 
-        # 数据存储
-        self.device_records = {}  # {device_id: [records]}
-        self.total_records = 0
-        self.data_file = 'device_data.json'
         
         # 统计
         self.status_count = {0: 0, 1: 0, 2: 0, 3: 0}  # 状态分布
@@ -98,10 +109,10 @@ class DeviceDataService(Node):
         self.get_logger().info(f'发布到device_status_service主题')
 
         #完成初始化
-        self.status = 1
+        # self.status = 1
         #发布消息以进行状态更新
-        self.publish_device_status()
-        self.get_logger().info('探测通告已发出，等待设备响应...')
+        # self.publish_device_status()
+        # self.get_logger().info('探测通告已发出，等待设备响应...')
 
         
 
@@ -116,6 +127,30 @@ class DeviceDataService(Node):
         参数：
             msg (DeviceStatus)：收到的设备状态消息
         """
+
+        device_id = msg.device_id
+        #关于冲突双方的调整
+        if device_id == self.device_id and msg.local_mac != self.local_mac and self.status != 3:
+            self.get_logger().warn(
+                f'设备ID冲突: 收到的消息device_id={msg.device_id} '
+                f'与本机device_id={self.device_id}相同，但MAC地址不同!'
+            )
+            self.reset() # 重置ID以避免冲突
+            return  # 不记录冲突消息
+        elif msg.status == -1 and self.device_records[msg.device_id][-1]['设备状态'] == 3:
+            self.get_logger().info('已忽略重置信息')
+            return  # 忽略来自重置设备的重置记录消息
+        
+        #关于非冲突双方的调整
+        if msg.status == -1 and msg.device_id in self.device_records and self.status != 3:
+            self.get_logger().warn(
+                f'设备 {msg.device_id} 请求重置，正在清除相关记录...'
+            )
+            del self.device_records[msg.device_id]  # 删除相关记录
+            if msg.device_id in self.device_death:
+                self.device_death.remove(msg.device_id)  # 从死亡列表中移除设备ID
+            return  # 不记录重置请求
+            
         # 记录消息
         self._record_device_data(msg)
         
@@ -226,8 +261,14 @@ class DeviceDataService(Node):
         self.status = -1  # 设置为-1表示重置状态
         self.publish_device_status()  # 发布重置状态以通知其他设备
 
+        del self.device_records[self.device_id] #清除当前设备ID的记录
+
         self.get_logger().warn('正在重置设备数据服务状态...')
         self.device_id = random.randint(1000, 9999)  # 生成新的随机设备ID
+
+        self.save_data_to_file(filename='device_restart.json', data=self.device_id) # 初始化时保存id到文件
+
+        self.publish_device_status()  # 发布重置后的状态以通知其他设备，以进行-1状态的记录
         self.status = 1  # 重置状态
         self.publish_device_status()  # 发布重置后的状态以通知其他设备
         self.get_logger().info(f'设备数据服务已重置，新的设备ID: {self.device_id}')
@@ -240,23 +281,6 @@ class DeviceDataService(Node):
             msg (DeviceStatus)：要记录的设备状态消息
         """
         device_id = msg.device_id
-        
-        if device_id == self.device_id and msg.local_mac != self.local_mac and self.status != 3:
-            self.get_logger().warn(
-                f'设备ID冲突: 收到的消息device_id={msg.device_id} '
-                f'与本机device_id={self.device_id}相同，但MAC地址不同!'
-            )
-            self.reset() # 重置ID以避免冲突
-            return  # 不记录冲突消息
-        
-        if msg.status == -1 and msg.device_id in self.device_records and self.status != 3:
-            self.get_logger().warn(
-                f'设备 {msg.device_id} 请求重置，正在清除相关记录...'
-            )
-            del self.device_records[msg.device_id]  # 删除相关记录
-            if msg.device_id in self.device_death:
-                self.device_death.remove(msg.device_id)  # 从死亡列表中移除设备ID
-            return  # 不记录重置请求
 
         # 若设备记录列表不存在，则初始化该列表
         if device_id not in self.device_records:
@@ -278,8 +302,8 @@ class DeviceDataService(Node):
             self.device_death.remove(device_id)  # 从死亡列表中移除设备ID
         
 
-        if msg.status == 0 or msg.status == 1:
-            self.get_logger().info('发现新设备,给予信息供应')
+        if (msg.status == 0 or msg.status == 1) and msg.local_mac != self.local_mac: #0是给新设备发，1是给reset过的设备发
+            self.get_logger().info(f'发现新设备,给予信息供应,设备mac: {msg.local_mac}, 本机mac: {self.local_mac}')
             self.publish_device_status() # 发布当前状态通告给新入机器(如果发现)
         
         # 添加记录
@@ -343,10 +367,20 @@ class DeviceDataService(Node):
         match status:
             case 0:
                 self.status = 1  # 更新状态为1，表示已完成启动阶段
+                self.publish_device_status()
+                self.get_logger().info('探测通告已发出，等待设备响应...')
                 return '启动'
             case 1:
                 #状态设置
-                if len(self.device_records) >= 4:
+                if msg.status == 3:
+                    self.get_logger().log(f'设备 {msg.device_id} 已进入维护状态，记录协商结果...')
+                    self.status = 3  # 更新状态为3，表示已完成协商阶段
+                    self.mac_address_a = msg.mac_address_a  # 更新MAC A
+                    self.mac_address_b = msg.mac_address_b  # 更新MAC B
+                    self.publish_device_status() # 发布已完成协商通告
+                    timer_period = 10.0
+                    self.timer = self.create_timer(timer_period, self.timer_callback) #10s检测一次状态
+                elif len(self.device_records) >= 4:
                     self.status = 2
                 else:
                     self.get_logger().info('等待设备触发协商...')
@@ -455,7 +489,7 @@ class DeviceDataService(Node):
         pass
 
     #关机后调用，用于保存数据，每次获得数据也调用
-    def save_data_to_file(self, filename: str = None):
+    def save_data_to_file(self, filename: str = None, data=None):
         """
         将记录的设备数据保存到JSON文件中。
 
@@ -465,7 +499,13 @@ class DeviceDataService(Node):
         if filename is None:
             filename = self.data_file
         
-        device_records_save = self.device_records.copy()  # 创建记录的浅复制以避免修改原始数据
+        if data is None:
+            data = self.device_records
+
+        try:
+            device_records_save = data.copy()  # 创建记录的浅复制以避免修改原始数据
+        except AttributeError:
+            device_records_save = data
 
         try:
             with open(filename, 'w') as f:

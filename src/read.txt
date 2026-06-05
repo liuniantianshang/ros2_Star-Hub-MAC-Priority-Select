@@ -6,6 +6,7 @@ jazzy识别python节点有问题，只能直接节点名运行
 
 sudo poweroff
 
+git 提交不成功试试绑定ssh
 
 device_data_service --ros-args     -p post_url:="http://192.168.2.100:8000/api/device"     -p enable_http_post:=true
 
