@@ -137,7 +137,7 @@ class DeviceDataService(Node):
             )
             self.reset() # 重置ID以避免冲突
             return  # 不记录冲突消息
-        elif msg.status == -1 and self.device_records[msg.device_id][-1]['设备状态'] == 3:
+        elif msg.status == -1 and msg.device_id == self.device_id and self.status == 3:
             self.get_logger().info('已忽略重置信息')
             return  # 忽略来自重置设备的重置记录消息
         
@@ -269,7 +269,7 @@ class DeviceDataService(Node):
         self.save_data_to_file(filename='device_restart.json', data=self.device_id) # 初始化时保存id到文件
 
         self.publish_device_status()  # 发布重置后的状态以通知其他设备，以进行-1状态的记录
-        self.status = 1  # 重置状态
+        self.status = 0  # 重置状态
         self.publish_device_status()  # 发布重置后的状态以通知其他设备
         self.get_logger().info(f'设备数据服务已重置，新的设备ID: {self.device_id}')
 
@@ -302,7 +302,7 @@ class DeviceDataService(Node):
             self.device_death.remove(device_id)  # 从死亡列表中移除设备ID
         
 
-        if (msg.status == 0 or msg.status == 1) and msg.local_mac != self.local_mac: #0是给新设备发，1是给reset过的设备发
+        if msg.status == 0 and msg.local_mac != self.local_mac: #0是给新设备发，1是给reset过的设备发
             self.get_logger().info(f'发现新设备,给予信息供应,设备mac: {msg.local_mac}, 本机mac: {self.local_mac}')
             self.publish_device_status() # 发布当前状态通告给新入机器(如果发现)
         
