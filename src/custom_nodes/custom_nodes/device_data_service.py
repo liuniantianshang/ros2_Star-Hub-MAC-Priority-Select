@@ -373,7 +373,7 @@ class DeviceDataService(Node):
             case 1:
                 #状态设置
                 if msg.status == 3:
-                    self.get_logger().log(f'设备 {msg.device_id} 已进入维护状态，记录协商结果...')
+                    self.get_logger().info(f'设备 {msg.device_id} 已进入维护状态，记录协商结果...')
                     self.status = 3  # 更新状态为3，表示已完成协商阶段
                     self.mac_address_a = msg.mac_address_a  # 更新MAC A
                     self.mac_address_b = msg.mac_address_b  # 更新MAC B
