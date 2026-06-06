@@ -4,6 +4,8 @@
 jazzy识别python节点有问题，只能直接节点名运行
 
 
+ssh连不上使用ssh-keygen -R [IP]
+
 sudo poweroff
 
 git 提交不成功试试绑定ssh
@@ -44,6 +46,9 @@ git add .
 git commit -m "第四次更新:修复了无限发现新设备问题；修复了id冲突进行字典查询导致服务崩溃的问题"
 git push
 
+git add .
+git commit -m "第五次更新:修复了级别参数问题log改为info"
+git push
 
 把当前 Git 仓库的 “上传地址” 从 HTTPS 改成 SSH↓
 git remote set-url origin git@github.com:liuniantianshang/ros2_Star-Hub-MAC-Priority-Select.git
