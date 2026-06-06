@@ -68,7 +68,7 @@ class DeviceDataService(Node):
         self.local_mac = self._get_local_mac()
         self.mac_address_a = '00:00:00:00:00:00'  #MAC A
         self.mac_address_b = '00:00:00:00:00:00'  #MAC B
-        self.device_death = []  # 记录死亡设备的列表
+        self.device_death = {}  # 记录死亡设备的字典
 
 
         #为device_status主题创建发布器（用于重新发布）
@@ -147,8 +147,8 @@ class DeviceDataService(Node):
                 f'设备 {msg.device_id} 请求重置，正在清除相关记录...'
             )
             del self.device_records[msg.device_id]  # 删除相关记录
-            if msg.device_id in self.device_death:
-                self.device_death.remove(msg.device_id)  # 从死亡列表中移除设备ID
+            # if msg.loacl_mac in self.device_death:
+                # del self.device_death[msg.local_mac]  # 从死亡列表中移除设备ID
             return  # 不记录重置请求
             
         # 记录消息
@@ -195,7 +195,7 @@ class DeviceDataService(Node):
                 'device_id:mac': device_id_mac,  # 发送当前记录的设备id与MAC地址对照表
                 'device_id_status': device_id_status,  # 发送当前记录的设备id与状态对照表
                 'received_at': datetime.now().isoformat(),
-                'device_death': self.device_death,  # 发送当前记录的死亡设备列表
+                'device_death': list(self.device_death.keys()),  # 发送当前记录的死亡设备列表
             }
             
             # 发送POST请求
@@ -297,9 +297,10 @@ class DeviceDataService(Node):
             '记录时间': datetime.now().isoformat(),
         }
 
-        if device_id in self.device_death:
-            self.get_logger().info(f'设备 {device_id} 已重新上线，移除死亡列表中的记录')
-            self.device_death.remove(device_id)  # 从死亡列表中移除设备ID
+        if msg.local_mac in self.device_death:
+            self.get_logger().info(f'设备 {device_id} 已重新上线，移除死亡字典中的记录')
+            # self.device_death.remove(device_id)  # 从死亡列表中移除设备ID
+            del self.device_death[msg.local_mac]  # 删除相关记录
         
 
         if msg.status == 0 and msg.local_mac != self.local_mac: #0是给新设备发，1是给reset过的设备发
@@ -433,9 +434,10 @@ class DeviceDataService(Node):
         for i in self.device_records:
             # self.get_logger().info(f'设备 {i} 的最新记录: {self.device_records[i][-1]}')
             timestamp = int(time.time() * 1000)
-            if timestamp - self.device_records[i][-1]['时间戳'] > 15000 and i not in self.device_death:  # 15秒未更新
+            if timestamp - self.device_records[i][-1]['时间戳'] > 15000 and self.device_records[i][-1]['设备mac'] not in self.device_death:  # 15秒未更新
                 self.get_logger().warn(f'设备 {i} 已超过15秒未更新状态!')
-                self.device_death.append(i)  # 将设备ID添加到死亡设备列表
+                # self.device_death.append(i)  # 将设备ID添加到死亡设备列表
+                self.device_death[device_records[i][-1]['设备mac']] = i
         #注意异常处理顺序(设备不足处理>副服务器挂起处理>主服务器挂起处理)(不能先处理主，以防副服务器挂起而被设为主服务器从而延长处理时间)
         if len(self.device_records) - len(self.device_death) > 1 and self.status == 3:  # 如果剩余设备少于2台且处于维护状态
 
@@ -443,7 +445,7 @@ class DeviceDataService(Node):
                 self.get_logger().warn(f'副服务器挂起，正在进行恢复处理...')
                 mac_b = list(sorted(list(self.device_records.values()), key=lambda x: x[-1]['设备mac'], reverse=True))  # 选择最大的设备MAC地址作为新的备服务器
                 for i in mac_b:
-                    if i[-1]['设备mac'] != self.mac_address_a and i[-1]['设备id'] not in self.device_death:
+                    if i[-1]['设备mac'] != self.mac_address_a and i[-1]['设备mac'] not in self.device_death:
                         self.mac_address_b = i[-1]['设备mac']
                         break
 
@@ -452,7 +454,7 @@ class DeviceDataService(Node):
                 self.mac_address_a = self.mac_address_b  # 将备服务器提升为主服务器
                 mac_b = list(sorted(list(self.device_records.values()), key=lambda x: x[-1]['设备mac'], reverse=True))  # 选择最大的设备MAC地址作为新的备服务器
                 for i in mac_b:
-                    if i[-1]['设备mac'] != self.mac_address_a and i[-1]['设备id'] not in self.device_death:
+                    if i[-1]['设备mac'] != self.mac_address_a and i[-1]['设备mac'] not in self.device_death:
                         self.mac_address_b = i[-1]['设备mac']
                         break
         else:
