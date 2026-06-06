@@ -458,9 +458,18 @@ class DeviceDataService(Node):
                     if i[-1]['设备mac'] != self.mac_address_a and i[-1]['设备mac'] not in self.device_death:
                         self.mac_address_b = i[-1]['设备mac']
                         break
+            
+            if self.mac_address_a == self.mac_address_b:
+                self.get_logger().warn(f'设备数量恢复充足，重新搭建网络...')
+                mac_b = list(sorted(list(self.device_records.values()), key=lambda x: x[-1]['设备mac'], reverse=True))  # 选择最大的设备MAC地址作为新的备服务器
+                for i in mac_b:
+                    if i[-1]['设备mac'] != self.mac_address_a and i[-1]['设备mac'] not in self.device_death:
+                        self.mac_address_b = i[-1]['设备mac']
+                        break
         else:
             self.get_logger().warn('设备数量不足，正在进行恢复处理...')
             self.mac_address_a = self.local_mac  # 将本机提升为主服务器
+            self.mac_address_b = self.local_mac  #设为副服务器，用于后续设备足够时检测是否为恢复
             #TODO其他处理
 
         self.get_logger().warn('------------------------------')
