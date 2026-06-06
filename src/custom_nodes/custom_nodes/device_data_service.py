@@ -142,11 +142,12 @@ class DeviceDataService(Node):
             return  # 忽略来自重置设备的重置记录消息
         
         #关于非冲突双方的调整
-        if msg.status == -1 and msg.device_id in self.device_records and self.status != 3:
+        if msg.status == -1 and self.status != 3:
             self.get_logger().warn(
                 f'设备 {msg.device_id} 请求重置，正在清除相关记录...'
             )
-            del self.device_records[msg.device_id]  # 删除相关记录
+            if msg.device_id in self.device_records:
+                del self.device_records[msg.device_id]  # 删除相关记录
             # if msg.loacl_mac in self.device_death:
                 # del self.device_death[msg.local_mac]  # 从死亡列表中移除设备ID
             return  # 不记录重置请求
@@ -437,7 +438,7 @@ class DeviceDataService(Node):
             if timestamp - self.device_records[i][-1]['时间戳'] > 15000 and self.device_records[i][-1]['设备mac'] not in self.device_death:  # 15秒未更新
                 self.get_logger().warn(f'设备 {i} 已超过15秒未更新状态!')
                 # self.device_death.append(i)  # 将设备ID添加到死亡设备列表
-                self.device_death[device_records[i][-1]['设备mac']] = i
+                self.device_death[self.device_records[i][-1]['设备mac']] = i
         #注意异常处理顺序(设备不足处理>副服务器挂起处理>主服务器挂起处理)(不能先处理主，以防副服务器挂起而被设为主服务器从而延长处理时间)
         if len(self.device_records) - len(self.device_death) > 1 and self.status == 3:  # 如果剩余设备少于2台且处于维护状态
 

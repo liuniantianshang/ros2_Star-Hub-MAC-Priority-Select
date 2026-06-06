@@ -54,6 +54,14 @@ git add .
 git commit -m "第六次更新:修复设备不足的判断值2->1"
 git push
 
+git add .
+git commit -m "第七次更新:修复主从选举的相关bug，将death从列表改为字典，键值对为:mac:id"
+git push
+
+git add .
+git commit -m "第八次更新:修复设备id冲突处理相关bug，收到原id的“-1”信息不再进行记录"
+git push
+
 把当前 Git 仓库的 “上传地址” 从 HTTPS 改成 SSH↓
 git remote set-url origin git@github.com:liuniantianshang/ros2_Star-Hub-MAC-Priority-Select.git
 
@@ -154,65 +162,3 @@ cs: dict_items(
 
 ]
 )
-
-
-rsp1@rsp1-desktop:~$ device_data_service 
-[INFO] [1780655439.992375128] [device_data_service]: 发布设备状态: 设备id=1001, 状态=0
-[INFO] [1780655439.993036482] [device_data_service]: 设备正在初始化...
-[INFO] [1780655439.993619207] [device_data_service]: HTTP POST已禁用或URL未配置
-[INFO] [1780655439.994151394] [device_data_service]: 设备数据服务已初始化
-[INFO] [1780655439.994688748] [device_data_service]: 订阅device_status主题
-[INFO] [1780655439.995214657] [device_data_service]: 发布到device_status_service主题
-[INFO] [1780655439.995786252] [device_data_service]: 发布设备状态: 设备id=1001, 状态=1
-[INFO] [1780655439.996330310] [device_data_service]: 探测通告已发出，等待设备响应...
-
-
-
-[INFO] [1780655439.997441777] [device_data_service]: 发现新设备  local status=0,给予信息供应
-[INFO] [1780655439.997959964] [device_data_service]: 发布设备状态: 设备id=1001, 状态=1
-[INFO] [1780655439.998822542] [device_data_service]: 设备数据保存到:device_data.json (1 记录)
-[INFO] [1780655439.999281895] [device_data_service]: 记录设备 1001: 状态=0, mac=2c:cf:67:81:0c:d9, 时间戳=1780655439964
-[INFO] [1780655439.999747342] [device_data_service]: 等待设备触发协商...
-
-
-[INFO] [1780655440.001840479] [device_data_service]: 设备数据保存到:device_data.json (2 记录)
-[INFO] [1780655440.002421889] [device_data_service]: 记录设备 1001: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780655439995
-[INFO] [1780655440.002921539] [device_data_service]: 等待设备触发协商...
-
-
-[INFO] [1780655440.004270229] [device_data_service]: 设备数据保存到:device_data.json (3 记录)
-[INFO] [1780655440.004873769] [device_data_service]: 记录设备 1001: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780655439997
-[INFO] [1780655440.005348289] [device_data_service]: 等待设备触发协商...
-^C[INFO] [1780655448.292189184] [device_data_service]: ========================================
-
-
-
-
-rsp1@rsp1-desktop:~/ros2_ws$ device_data_service 
-[INFO] [1780657610.586980186] [device_data_service]: restart文件存在
-[INFO] [1780657610.587778093] [device_data_service]: 从文件加载设备ID: 5446
-[INFO] [1780657610.598054665] [device_data_service]: 发布设备状态: 设备id=5446, 状态=0
-[INFO] [1780657610.598668424] [device_data_service]: 设备正在初始化...
-[INFO] [1780657610.599303701] [device_data_service]: HTTP POST已禁用或URL未配置
-[INFO] [1780657610.599940016] [device_data_service]: 设备数据服务已初始化
-[INFO] [1780657610.600552645] [device_data_service]: 订阅device_status主题
-[INFO] [1780657610.601163775] [device_data_service]: 发布到device_status_service主题
-[INFO] [1780657610.602456274] [device_data_service]: 发现新设备,给予信息供应
-[INFO] [1780657610.602996719] [device_data_service]: 发布设备状态: 设备id=5446, 状态=0
-[INFO] [1780657610.603862515] [device_data_service]: 设备数据保存到:device_data.json (1 记录)
-[INFO] [1780657610.604388181] [device_data_service]: 记录设备 5446: 状态=0, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610597
-[INFO] [1780657610.605196996] [device_data_service]: 发布设备状态: 设备id=5446, 状态=1
-[INFO] [1780657610.605637088] [device_data_service]: 探测通告已发出，等待设备响应...
-
-
-[INFO] [1780657610.606801606] [device_data_service]: 发现新设备,给予信息供应
-[INFO] [1780657610.607351069] [device_data_service]: 发布设备状态: 设备id=5446, 状态=1
-[INFO] [1780657610.608114569] [device_data_service]: 设备数据保存到:device_data.json (2 记录)
-[INFO] [1780657610.608554069] [device_data_service]: 记录设备 5446: 状态=0, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610602
-[INFO] [1780657610.609128180] [device_data_service]: 等待设备触发协商...
-[INFO] [1780657610.610378809] [device_data_service]: 设备数据保存到:device_data.json (3 记录)
-[INFO] [1780657610.610925346] [device_data_service]: 记录设备 5446: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610604
-[INFO] [1780657610.611451624] [device_data_service]: 等待设备触发协商...
-[INFO] [1780657610.612715234] [device_data_service]: 设备数据保存到:device_data.json (4 记录)
-[INFO] [1780657610.613202716] [device_data_service]: 记录设备 5446: 状态=1, mac=2c:cf:67:81:0c:d9, 时间戳=1780657610606
-[INFO] [1780657610.613761456] [device_data_service]: 等待设备触发协商...
