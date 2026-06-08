@@ -10,7 +10,7 @@ sudo poweroff
 
 git 提交不成功试试绑定ssh
 
-device_data_service --ros-args     -p post_url:="http://192.168.2.100:8000/api/device"     -p enable_http_post:=true
+device_data_service --ros-args     -p post_url:="http://192.168.2.103:8000/api/device"     -p enable_http_post:=true
 
 device_data_service --ros-args \
     -p post_url:="http://localhost:8000/api/device" \
@@ -108,6 +108,13 @@ WorkingDirectory=/home/rsp1/ros2_ws
 
 [Install]
 WantedBy=multi-user.target
+
+---------------
+install内更新
+After=network-online.target
+Wants=network-online.target
+(等待网卡获得ip再启动)
+-----
 
 # 重载系统服务配置
 sudo systemctl daemon-reload

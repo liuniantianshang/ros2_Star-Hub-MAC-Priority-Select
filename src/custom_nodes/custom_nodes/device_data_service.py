@@ -302,11 +302,22 @@ class DeviceDataService(Node):
             self.get_logger().info(f'设备 {device_id} 已重新上线，移除死亡字典中的记录')
             # self.device_death.remove(device_id)  # 从死亡列表中移除设备ID
             del self.device_death[msg.local_mac]  # 删除相关记录
+            
         
 
         if msg.status == 0 and msg.local_mac != self.local_mac: #0是给新设备发，1是给reset过的设备发
             self.get_logger().info(f'发现新设备,给予信息供应,设备mac: {msg.local_mac}, 本机mac: {self.local_mac}')
             self.publish_device_status() # 发布当前状态通告给新入机器(如果发现)
+            if self.local_mac == self.mac_address_a:
+                self.get_logger().info(f'给予死亡设备信息,防止设备丢失')
+                for i in self.device_records:
+                    try:
+                        self.publish_device_status(self.device_records[i][-1])
+                    except IndexError:
+                        self.get_logger().info(f'空的？{i}:{self.device_records[i]}')
+
+
+
         
         # 添加记录
         self.device_records[device_id].append(record)
@@ -480,7 +491,7 @@ class DeviceDataService(Node):
             thread.daemon = True
             thread.start()
 
-    def publish_device_status(self):
+    def publish_device_status(self,ms = None):
         """
         发布设备状态消息。
         此功能允许服务发布设备状态消息
@@ -492,14 +503,23 @@ class DeviceDataService(Node):
             mac_a (str): MAC地址A
             mac_b (str): MAC地址B
         """
-        msg = DeviceStatus()
-        msg.device_id = self.device_id
-        msg.status = self.status
-        msg.local_mac = self.local_mac
-        msg.timestamp = int(time.time() * 1000)
-        msg.mac_address_a = self.mac_address_a
-        msg.mac_address_b = self.mac_address_b
-        
+        if ms == None:
+            msg = DeviceStatus()
+            msg.device_id = self.device_id
+            msg.status = self.status
+            msg.local_mac = self.local_mac
+            msg.timestamp = int(time.time() * 1000)
+            msg.mac_address_a = self.mac_address_a
+            msg.mac_address_b = self.mac_address_b
+        else:
+            msg = DeviceStatus()
+            msg.device_id = ms['设备id']
+            msg.status = ms['设备状态']
+            msg.local_mac = ms['设备mac']
+            msg.timestamp = ms['时间戳']
+            msg.mac_address_a = ms['mac_address_a']
+            msg.mac_address_b = ms['mac_address_b']
+
         self.publisher.publish(msg)
         
         self.get_logger().info(
